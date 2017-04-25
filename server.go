@@ -10,8 +10,11 @@ import (
 	"strings"
 )
 
+const PORT = 3000
+const USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0)"
+
 func main() {
-	port := flag.Int("p", 80, "port to run service on")
+	port := flag.Int("p", PORT, "port to run service on")
 	flag.Parse()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		client := &http.Client{}
@@ -34,25 +37,25 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
 
-const ua = "Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0)"
-
 func proxy(client *http.Client, r *http.Request) ([]byte, error) {
 	query := r.URL.Query()
-	if len(query["url"]) == 0 {
+	var url = query.Get("url")
+	if len(url) == 0 {
 		return nil, errors.New(`{"error":"Missing url param."}`)
 	}
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = "http://" + url
+	}
 
-	var method string
-	if len(query["method"]) > 0 {
-		method = strings.ToUpper(query["method"][0])
-	} else {
+	var method = strings.ToUpper(query.Get("method"))
+	if len(method) == 0 {
 		method = "GET"
 	}
 
 	var req *http.Request
 	var err error
-	req, err = http.NewRequest(method, query["url"][0], r.Body)
-	req.Header.Add("user-agent", ua)
+	req, err = http.NewRequest(method, url, r.Body)
+	req.Header.Add("user-agent", USER_AGENT)
 	for _, v := range query["header"] {
 		kv := strings.Split(v, "|")
 		if len(kv) < 2 {
