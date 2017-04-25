@@ -17,7 +17,7 @@ func main() {
 		client := &http.Client{}
 
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With")
+		w.Header().Set("Access-Control-Allow-Headers", "X-Requested-With, Cache-Control")
 
 		var body []byte
 		var err error
