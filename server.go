@@ -27,7 +27,7 @@ func main() {
 		body, err = proxy(client, r)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, "%s", err)
+			fmt.Fprintf(w, `{ "error": %q }`, err)
 		} else {
 			fmt.Fprintf(w, "%s", body)
 		}
@@ -41,7 +41,7 @@ func proxy(client *http.Client, r *http.Request) ([]byte, error) {
 	query := r.URL.Query()
 	var url = query.Get("url")
 	if len(url) == 0 {
-		return nil, errors.New(`{"error":"Missing url param."}`)
+		return nil, errors.New("Missing url param.")
 	}
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "http://" + url
@@ -59,7 +59,7 @@ func proxy(client *http.Client, r *http.Request) ([]byte, error) {
 	for _, v := range query["header"] {
 		kv := strings.Split(v, "|")
 		if len(kv) < 2 {
-			return nil, errors.New(fmt.Sprintf(`{"error":"%s: malformed header, headers must be seperated by the string \"|\""}`, v))
+			return nil, errors.New(fmt.Sprintf(`%s: malformed header, headers must be seperated by the string "|"`, v))
 		}
 		if strings.ToLower(kv[0]) == "user-agent" {
 			req.Header.Del("user-agent")
@@ -69,12 +69,8 @@ func proxy(client *http.Client, r *http.Request) ([]byte, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf(`{"error":%q}`, err))
+		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf(`{"error":%q}`, err))
-	}
-	return body, nil
+	return ioutil.ReadAll(resp.Body)
 }
